@@ -10,11 +10,11 @@ class MainLab4 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      {"title": "Exercise 1 – Core Widgets Demo", "page": Exercise1Page()},
-      {"title": "Exercise 2 – Input Controls Demo", "page": Exercise2Page()},
-      {"title": "Exercise 3 – Layout Demo", "page": Exercise3Page()},
-      {"title": "Exercise 4 – App Structure & Theme", "page": Exercise4Page()},
-      {"title": "Exercise 5 – Common UI Fixes", "page": Exercise5Page()},
+      {"title": "Exercise 1 – Core Widgets Demo", "screens": Exercise1Page()},
+      {"title": "Exercise 2 – Input Controls Demo", "screens": Exercise2Page()},
+      {"title": "Exercise 3 – Layout Demo", "screens": Exercise3Page()},
+      {"title": "Exercise 4 – App Structure & Theme", "screens": Exercise4Page()},
+      {"title": "Exercise 5 – Common UI Fixes", "screens": Exercise5Page()},
     ];
 
     return Scaffold(
@@ -41,7 +41,7 @@ class MainLab4 extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                        MaterialPageRoute<void>(
-                        builder: (context) => item["page"]as Widget ,
+                        builder: (context) => item["screens"]as Widget ,
                       ),
                     );
               }),

@@ -91,7 +91,7 @@ class _MovieDetailContent extends ConsumerWidget {
                   ),
                 ),
                 Positioned(
-                  bottom: 30,
+                  bottom: 20,
                   left: 16,
                   right: 16,
                   child: Column(
@@ -140,7 +140,6 @@ class _MovieDetailContent extends ConsumerWidget {
 
                   const SizedBox(height: 20),
 
-
                   Text(
                     'Overview',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -158,34 +157,15 @@ class _MovieDetailContent extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _FavoriteButton(movie: movie),
-                      _RateButton(movie: movie),
-                      _ShareButton(movie: movie),
+                      _FavoriteIconButton(movie: movie),
+                      _RateIconButton(movie: movie),
+                      _ShareIconButton(movie: movie),
                     ],
                   ),
 
                   const SizedBox(height: 24),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Trailers',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...movie.trailers.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final trailer = entry.value;
-                        return _TrailerItem(
-                          trailer: trailer,
-                          movieId: movie.id,
-                          trailerIndex: index,
-                        );
-                      }).toList(),
-                    ],
-                  ),
+
+                  _buildTrailersSection(context, ref),
                 ],
               ),
             ),
@@ -194,12 +174,42 @@ class _MovieDetailContent extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildTrailersSection(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Trailers',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        SizedBox(
+          height: 200,
+          child: ListView.builder(
+            itemCount: movie.trailers.length,
+            itemBuilder: (context, index) {
+              final trailer = movie.trailers[index];
+              return _TrailerItem(
+                trailer: trailer,
+                movieId: movie.id,
+                trailerIndex: index,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _FavoriteButton extends ConsumerWidget {
+class _FavoriteIconButton extends ConsumerWidget {
   final Movie movie;
 
-  const _FavoriteButton({required this.movie});
+  const _FavoriteIconButton({required this.movie});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -207,41 +217,33 @@ class _FavoriteButton extends ConsumerWidget {
     final color = isFavorite ? Colors.red : Colors.deepPurple;
     final icon = isFavorite ? Icons.favorite : Icons.favorite_border;
 
-    return InkWell(
-      onTap: () async {
-        await ref.read(movieListProvider.notifier).toggleFavorite(movie.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(!isFavorite ? 'Added to favorites' : 'Removed from favorites'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(30),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 4),
-            Text(
-              'Favorite',
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
+    return Column(
+      children: [
+        IconButton(
+          icon: Icon(icon, color: color),
+          iconSize: 32,
+          tooltip: 'Favorite',
+          onPressed: () async {
+            await ref.read(movieListProvider.notifier).toggleFavorite(movie.id);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(!isFavorite ? 'Added to favorites' : 'Removed from favorites'),
+                duration: const Duration(seconds: 1),
+                behavior: SnackBarBehavior.floating,
               ),
-            ),
-          ],
+            );
+          },
         ),
-      ),
+        const Text('Favorite',style: TextStyle(color: Colors.deepPurple),)
+      ],
     );
   }
 }
-class _RateButton extends ConsumerWidget {
+class _RateIconButton extends ConsumerWidget {
   final Movie movie;
 
-  const _RateButton({required this.movie});
+  const _RateIconButton({required this.movie});
 
   void _showRateDialog(BuildContext context, WidgetRef ref) {
     double tempRating = movie.rating;
@@ -261,6 +263,7 @@ class _RateButton extends ConsumerWidget {
                   value: tempRating,
                   min: 0,
                   max: 10,
+                  divisions: 20,
                   label: tempRating.toStringAsFixed(1),
                   onChanged: (value) {
                     setState(() {
@@ -281,7 +284,10 @@ class _RateButton extends ConsumerWidget {
                   Navigator.pop(dialogContext);
                   ref.read(movieListProvider.notifier).updateRating(movie.id, tempRating);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Rating saved!')),
+                    const SnackBar(
+                      content: Text('Rating saved!'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
                   );
                 },
                 child: const Text('Save'),
@@ -295,68 +301,47 @@ class _RateButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return InkWell(
-      onTap: () => _showRateDialog(context, ref),
-      borderRadius: BorderRadius.circular(30),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.star, color: Colors.deepPurple, size: 28),
-            SizedBox(height: 4),
-            Text(
-              'Rate',
-              style: TextStyle(
-                color: Colors.deepPurple,
-                fontSize: 12,
-              ),
-            ),
-          ],
+    return Column(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.star, color: Colors.deepPurple),
+          iconSize: 32,
+          tooltip: 'Rate',
+          onPressed: () => _showRateDialog(context, ref),
         ),
-      ),
+        const Text('Rate',style: TextStyle(color: Colors.deepPurple),)
+      ],
     );
   }
 }
-
-class _ShareButton extends ConsumerWidget {
+class _ShareIconButton extends ConsumerWidget {
   final Movie movie;
 
-  const _ShareButton({required this.movie});
+  const _ShareIconButton({required this.movie});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sharing ${movie.title}...'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(30),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.share, color: Colors.deepPurple, size: 28),
-            SizedBox(height: 4),
-            Text(
-              'Share',
-              style: TextStyle(
-                color: Colors.deepPurple,
-                fontSize: 12,
+    return Column(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.share, color: Colors.deepPurple),
+          iconSize: 32,
+          tooltip: 'Share',
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Sharing ${movie.title}...'),
+                duration: const Duration(seconds: 1),
+                behavior: SnackBarBehavior.floating,
               ),
-            ),
-          ],
+            );
+          },
         ),
-      ),
+        const Text('Share',style: TextStyle(color: Colors.deepPurple),)
+      ],
     );
   }
 }
-
 class _TrailerItem extends ConsumerWidget {
   final Trailer trailer;
   final String movieId;

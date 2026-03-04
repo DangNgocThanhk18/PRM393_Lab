@@ -91,7 +91,7 @@ class _MovieDetailContent extends ConsumerWidget {
                   ),
                 ),
                 Positioned(
-                  bottom: 20,
+                  bottom: 30,
                   left: 16,
                   right: 16,
                   child: Column(
@@ -140,7 +140,7 @@ class _MovieDetailContent extends ConsumerWidget {
 
                   const SizedBox(height: 20),
 
-                  // Overview
+
                   Text(
                     'Overview',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -165,8 +165,6 @@ class _MovieDetailContent extends ConsumerWidget {
                   ),
 
                   const SizedBox(height: 24),
-
-                  // Trailers
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

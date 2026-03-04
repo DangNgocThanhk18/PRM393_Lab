@@ -74,7 +74,7 @@ class MovieCard extends ConsumerWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MovieDetailScreen(movieId: movie.id), // Chỉ truyền ID
+                builder: (context) => MovieDetailScreen(movieId: movie.id),
               ),
             );
         },

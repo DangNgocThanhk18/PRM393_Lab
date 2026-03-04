@@ -4,7 +4,7 @@ import '../data/sample_data.dart';
 class MovieRepository {
   final List<Movie> _db = sampleMovies;
   Future<List<Movie>> getAll() async {
-    await Future.delayed(const Duration(seconds: 1)); // Giả lập mạng chậm
+    await Future.delayed(const Duration(seconds: 1));
     return List.from(_db);
   }
   Future<void> add(Movie movie) async {

@@ -60,7 +60,6 @@ class _MovieDetailContent extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Poster với gradient
             Stack(
               children: [
                 Image.asset(
@@ -128,7 +127,6 @@ class _MovieDetailContent extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Genres
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -213,10 +211,7 @@ class _FavoriteButton extends ConsumerWidget {
 
     return InkWell(
       onTap: () async {
-        // Gọi toggle - UI sẽ tự cập nhật nhờ state đã thay đổi trong provider
         await ref.read(movieListProvider.notifier).toggleFavorite(movie.id);
-
-        // Dùng isFavorite hiện tại để hiển thị thông báo
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(!isFavorite ? 'Added to favorites' : 'Removed from favorites'),
@@ -393,7 +388,6 @@ class _TrailerItem extends ConsumerWidget {
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          // Gọi toggle - UI sẽ tự cập nhật
           ref.read(movieListProvider.notifier).toggleTrailerWatched(movieId, trailerIndex);
         },
       ),

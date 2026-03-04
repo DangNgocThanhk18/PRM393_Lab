@@ -1,6 +1,4 @@
-// providers/movie_list_viewmodel.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/movie.dart';
 import 'movie_providers.dart';
 part 'movie_list_viewmodel.g.dart';

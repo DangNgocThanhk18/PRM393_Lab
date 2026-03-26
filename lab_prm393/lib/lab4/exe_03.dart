@@ -110,7 +110,7 @@ class Exercise3Page extends StatelessWidget {
   }
 }
 
-// Extracted CategoryChip widget
+// Extracted CategoryChip widgets
 class CategoryChip extends StatelessWidget {
   final String label;
   final bool isSelected;

@@ -11,7 +11,7 @@ void exercise5() {
 }
 
 Future<void> fetchData() async {
-  print('Fetching data...');
+  print('Fetching services...');
   await Future.delayed(Duration(seconds: 2), () {
     print('Data loaded successfully!');
   });

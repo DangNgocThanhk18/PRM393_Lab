@@ -1,9 +1,7 @@
+// lib/models/user.dart
 class User {
   final String email;
   final String token;
 
-  const User({
-    required this.email,
-    required this.token,
-  });
+  User({required this.email, required this.token});
 }

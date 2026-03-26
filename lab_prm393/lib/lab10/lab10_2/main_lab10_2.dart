@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import './screens/login_screen.dart';
-import './screens/home_screen.dart';
-import './providers/auth_provider.dart';
+import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
+import 'providers/auth_provider.dart';
 
 void main() {
   runApp(
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mock Login',
+      title: 'Real REST API Login',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,

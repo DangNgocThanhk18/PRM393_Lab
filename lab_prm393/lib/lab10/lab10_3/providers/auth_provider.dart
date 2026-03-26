@@ -1,80 +1,51 @@
+// lib/providers/auth_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 
-class AuthState {
-  final User? user;
-  final bool isLoading;
-  final String? error;
-  final bool isCheckingSession;
+final authServiceProvider = Provider((ref) => AuthService());
+final storageServiceProvider = Provider((ref) => StorageService());
 
-  const AuthState({
-    this.user,
-    this.isLoading = false,
-    this.error,
-    this.isCheckingSession = false,
-  });
+final authStateProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>(
+      (ref) => AuthNotifier(
+    ref.watch(authServiceProvider),
+    ref.watch(storageServiceProvider),
+  ),
+);
 
-  AuthState copyWith({
-    User? user,
-    bool? isLoading,
-    String? error,
-    bool? isCheckingSession,
-  }) {
-    return AuthState(
-      user: user ?? this.user,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-      isCheckingSession: isCheckingSession ?? this.isCheckingSession,
-    );
-  }
-}
-
-class AuthNotifier extends StateNotifier<AuthState> {
+class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   final AuthService _authService;
+  final StorageService _storageService;
 
-  AuthNotifier(this._authService) : super(const AuthState());
+  AuthNotifier(this._authService, this._storageService)
+      : super(const AsyncValue.loading()) {
+    _checkAutoLogin();
+  }
 
-  Future<void> checkAutoLogin() async {
-    state = state.copyWith(isCheckingSession: true);
-
-    final user = await _authService.getSession();
-
+  Future<void> _checkAutoLogin() async {
+    final user = await _storageService.getUser();
     if (user != null) {
-      state = state.copyWith(user: user, isCheckingSession: false);
+      state = AsyncValue.data(user);
     } else {
-      state = state.copyWith(isCheckingSession: false);
+      state = const AsyncValue.data(null);
     }
   }
 
-  Future<bool> login(String username, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> login(String username, String password) async {
+    state = const AsyncValue.loading();
 
     try {
-      final response = await _authService.login(username, password);
-      final user = User.fromJson(response);
-      await _authService.saveSession(user);
-      state = state.copyWith(user: user, isLoading: false);
-      return true;
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString().replaceAll('Exception: ', ''),
-      );
-      return false;
+      final user = await _authService.login(username, password);
+      await _storageService.saveUser(user);
+      state = AsyncValue.data(user);
+    } catch (error) {
+      state = AsyncValue.error(error, StackTrace.current);
     }
   }
 
   Future<void> logout() async {
-    await _authService.clearSession();
-    state = const AuthState();
-  }
-
-  void clearError() {
-    state = state.copyWith(error: null);
+    await _storageService.clearUser();
+    state = const AsyncValue.data(null);
   }
 }
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(AuthService());
-});

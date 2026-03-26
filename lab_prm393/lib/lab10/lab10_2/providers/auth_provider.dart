@@ -1,62 +1,31 @@
+// lib/providers/auth_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
-import '../services/auth_service.dart';
+import '../services/api_auth_service.dart';
 
-class AuthState {
-  final User? user;
-  final bool isLoading;
-  final String? error;
+final authServiceProvider = Provider((ref) => ApiAuthService());
 
-  const AuthState({
-    this.user,
-    this.isLoading = false,
-    this.error,
-  });
+final authStateProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>(
+      (ref) => AuthNotifier(ref.watch(authServiceProvider)),
+);
 
-  AuthState copyWith({
-    User? user,
-    bool? isLoading,
-    String? error,
-  }) {
-    return AuthState(
-      user: user ?? this.user,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
-  }
-}
+class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
+  final ApiAuthService _authService;
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthService _authService;
+  AuthNotifier(this._authService) : super(const AsyncValue.data(null));
 
-  AuthNotifier(this._authService) : super(const AuthState());
-
-  Future<bool> login(String username, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> login(String username, String password) async {
+    state = const AsyncValue.loading();
 
     try {
-      final response = await _authService.login(username, password);
-      final user = User.fromJson(response);
-      state = state.copyWith(user: user, isLoading: false);
-      return true;
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString().replaceAll('Exception: ', ''),
-      );
-      return false;
+      final user = await _authService.login(username, password);
+      state = AsyncValue.data(user);
+    } catch (error) {
+      state = AsyncValue.error(error, StackTrace.current);
     }
   }
 
   void logout() {
-    state = const AuthState();
-  }
-
-  void clearError() {
-    state = state.copyWith(error: null);
+    state = const AsyncValue.data(null);
   }
 }
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(AuthService());
-});

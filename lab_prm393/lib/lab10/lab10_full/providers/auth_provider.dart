@@ -1,151 +1,144 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase;
-import 'package:google_sign_in/google_sign_in.dart';
-import '../models/user.dart';
-import '../services/auth_service.dart';
-import '../services/notification_service.dart';
-
-class AuthState {
-  final User? user;
-  final bool isLoading;
-  final String? error;
-  final bool isCheckingSession;
-
-  const AuthState({
-    this.user,
-    this.isLoading = false,
-    this.error,
-    this.isCheckingSession = false,
-  });
-
-  AuthState copyWith({
-    User? user,
-    bool? isLoading,
-    String? error,
-    bool? isCheckingSession,
-  }) {
-    return AuthState(
-      user: user ?? this.user,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-      isCheckingSession: isCheckingSession ?? this.isCheckingSession,
-    );
-  }
-}
-
-class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthService _authService;
-  final firebase.FirebaseAuth _firebaseAuth;
-  final GoogleSignIn _googleSignIn;
-
-  AuthNotifier(this._authService, this._firebaseAuth, this._googleSignIn)
-      : super(const AuthState()) {
-    _firebaseAuth.authStateChanges().listen((firebaseUser) {
-      if (firebaseUser != null && state.user?.authType != 'google') {
-        final user = User.fromFirebaseUser(firebaseUser);
-        state = state.copyWith(user: user);
-        _authService.saveSession(user);
-      } else if (firebaseUser == null && state.user?.authType == 'google') {
-        state = state.copyWith(user: null);
-      }
-    });
-  }
-
-  Future<void> checkAutoLogin() async {
-    state = state.copyWith(isCheckingSession: true);
-
-    // Check local session first
-    final localUser = await _authService.getSession();
-
-    if (localUser != null) {
-      state = state.copyWith(user: localUser, isCheckingSession: false);
-      // Send welcome back notification
-      await NotificationService.showWelcomeBackNotification(localUser.fullName);
-    } else {
-      state = state.copyWith(isCheckingSession: false);
-    }
-  }
-
-  Future<bool> apiLogin(String username, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      final response = await _authService.apiLogin(username, password);
-      final user = User.fromApiJson(response);
-      await _authService.saveSession(user);
-      state = state.copyWith(user: user, isLoading: false);
-
-      // Send login success notification
-      await NotificationService.showLoginSuccessNotification(username);
-
-      return true;
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString().replaceAll('Exception: ', ''),
-      );
-      return false;
-    }
-  }
-
-  Future<void> googleSignIn() async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        state = state.copyWith(isLoading: false);
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
-
-      final credential = firebase.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final firebaseUser = await _firebaseAuth.signInWithCredential(credential);
-      final user = User.fromFirebaseUser(firebaseUser.user!);
-      await _authService.saveSession(user);
-      state = state.copyWith(user: user, isLoading: false);
-
-      // Send Google login success notification
-      await NotificationService.showGoogleLoginSuccessNotification(user.fullName);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  Future<void> logout() async {
-    state = state.copyWith(isLoading: true);
-
-    // Sign out from Firebase if Google login
-    if (state.user?.authType == 'google') {
-      await _googleSignIn.signOut();
-      await _firebaseAuth.signOut();
-    }
-
-    await _authService.clearSession();
-    state = const AuthState();
-
-    // Send logout notification
-    await NotificationService.showLogoutNotification();
-  }
-
-  void clearError() {
-    state = state.copyWith(error: null);
-  }
-}
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(
-    AuthService(),
-    firebase.FirebaseAuth.instance,
-    GoogleSignIn(),
-  );
-});
+// // lib/providers/auth_provider.dart
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:google_sign_in/google_sign_in.dart';
+// import '../models/user.dart';
+// import '../services/api_auth_service.dart';
+// import '../services/storage_service.dart';
+// import 'notification_provider.dart';
+//
+// final apiAuthServiceProvider = Provider((ref) => ApiAuthService());
+// final storageServiceProvider = Provider((ref) => StorageService());
+// final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
+// final googleSignInProvider = Provider((ref) => GoogleSignIn());
+//
+// final authStateProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>(
+//       (ref) => AuthNotifier(
+//     ref.watch(apiAuthServiceProvider),
+//     ref.watch(storageServiceProvider),
+//     ref.watch(firebaseAuthProvider),
+//     ref.watch(googleSignInProvider),
+//     ref.watch(notificationProvider),
+//   ),
+// );
+//
+// class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
+//   final ApiAuthService _apiAuthService;
+//   final StorageService _storageService;
+//   final FirebaseAuth _firebaseAuth;
+//   final GoogleSignIn _googleSignIn;
+//   final NotificationService _notificationService;
+//
+//   AuthNotifier(
+//       this._apiAuthService,
+//       this._storageService,
+//       this._firebaseAuth,
+//       this._googleSignIn,
+//       this._notificationService,
+//       ) : super(const AsyncValue.loading()) {
+//     _checkAutoLogin();
+//     _listenToFirebaseAuth();
+//   }
+//
+//   void _listenToFirebaseAuth() {
+//     _firebaseAuth.authStateChanges().listen((firebaseUser) async {
+//       if (firebaseUser != null) {
+//         // Convert Firebase user to app User model
+//         final user = User(
+//           id: 0,
+//           username: firebaseUser.displayName ?? firebaseUser.email?.split('@').first ?? 'user',
+//           email: firebaseUser.email ?? '',
+//           token: await firebaseUser.getIdToken() ?? '',
+//           firstName: firebaseUser.displayName?.split(' ').first ?? '',
+//           lastName: firebaseUser.displayName?.split(' ').last ?? '',
+//           photoUrl: firebaseUser.photoURL,
+//         );
+//         await _storageService.saveUser(user, authMethod: 'google');
+//         state = AsyncValue.data(user);
+//
+//         // Send notification on successful login
+//         await _notificationService.showNotification(
+//           id: DateTime.now().millisecond,
+//           title: 'Welcome!',
+//           body: 'Successfully logged in with Google',
+//           payload: 'google_login',
+//         );
+//       }
+//     });
+//   }
+//
+//   Future<void> _checkAutoLogin() async {
+//     final user = await _storageService.getUser();
+//     if (user != null) {
+//       state = AsyncValue.data(user);
+//     } else {
+//       state = const AsyncValue.data(null);
+//     }
+//   }
+//
+//   Future<void> loginWithApi(String username, String password) async {
+//     state = const AsyncValue.loading();
+//
+//     try {
+//       final user = await _apiAuthService.login(username, password);
+//       await _storageService.saveUser(user, authMethod: 'api');
+//       state = AsyncValue.data(user);
+//
+//       // Send notification on successful login
+//       await _notificationService.showNotification(
+//         id: DateTime.now().millisecond,
+//         title: 'Welcome ${user.firstName}!',
+//         body: 'Successfully logged in to your account',
+//         payload: 'api_login',
+//       );
+//     } catch (error) {
+//       state = AsyncValue.error(error, StackTrace.current);
+//     }
+//   }
+//
+//   Future<void> loginWithGoogle() async {
+//     state = const AsyncValue.loading();
+//
+//     try {
+//       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+//
+//       if (googleUser == null) {
+//         state = const AsyncValue.data(null);
+//         return;
+//       }
+//
+//       final GoogleSignInAuthentication googleAuth =
+//       await googleUser.authentication;
+//
+//       final credential = GoogleAuthProvider.credential(
+//         accessToken: googleAuth.accessToken,
+//         idToken: googleAuth.idToken,
+//       );
+//
+//       await _firebaseAuth.signInWithCredential(credential);
+//       // State will be updated by _listenToFirebaseAuth
+//     } catch (error) {
+//       state = AsyncValue.error(error, StackTrace.current);
+//     }
+//   }
+//
+//   Future<void> logout() async {
+//     final authMethod = await _storageService.getAuthMethod();
+//
+//     if (authMethod == 'google') {
+//       await _googleSignIn.signOut();
+//       await _firebaseAuth.signOut();
+//     }
+//
+//     await _storageService.clearUser();
+//     state = const AsyncValue.data(null);
+//
+//     // Send notification on logout
+//     await _notificationService.showNotification(
+//       id: DateTime.now().millisecond,
+//       title: 'Goodbye!',
+//       body: 'You have been logged out successfully',
+//       payload: 'logout',
+//     );
+//   }
+// }
